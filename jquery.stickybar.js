@@ -1,14 +1,29 @@
 (function($) {
 	$.fn.simpleStickyBar = function(options) {
+		//function to add style rules to head
+		var addStyles = function() {
+			$('#jqsbStyle').remove();
+			$('<style type="text/css" id="jqsbStyle">.jqsb-stuck-nav {position: fixed; top: 0; z-index:1000;}</style>').appendTo($('head'));
+		};
+
+		//build plugin
 		return this.each(function() {
-			var stuck = false, $body = $('body'), $this = $(this), width, totalWidth, css, $parent, height, margin = 0, nowTop, offset;
+			var stuck = false, $body = $('body'), $this = $(this), width, totalWidth, $parent, height, margin = 0, newMargin, nowTop, offset;
+			
+			//function to parse pixel values
 			var cssVal = function(property) {
 				return parseInt($this.css(property).replace(/[^\d]*/g, ''), 10) || 0;
 			};
+
+			//set default options
 			options = options || {};
 			if (!options.hasOwnProperty('maintainHeight')) options.maintainHeight = false;
 			if (!options.hasOwnProperty('maintainWidth')) options.maintainWidth = false;
 			if (!options.hasOwnProperty('checkFullWidth')) options.checkFullWidth = false;
+			if (!options.hasOwnProperty('navbarInline')) options.navbarInline = false;
+
+			//attach necessary styles to head
+			addStyles();
 
 			//get starting values
 			offset = $this.offset() && $this.offset().top;
@@ -30,25 +45,19 @@
 				//adjust styling for stickybar according to position
 				if (!stuck && nowTop > offset) {
 					margin = cssVal('margin-top');
-					css = {
-						'position': 'fixed',
-						'top': 0,
-						'z-index': 1000
-					};
-					if (options.maintainWidth) css.width = width;
-					$this.css(css);
+					if (options.maintainWidth) $this.css({width: width});
+					$this.addClass('jqsb-stuck-nav');
+					newMargin = options.maintainHeight ? margin + height : margin;
+					if (!options.navbarInline) {
+						newMargin += offset;
+					}
 					$parent.css({
-						'margin-top': options.maintainHeight ? margin + offset + height : margin + offset
+						'margin-top': newMargin
 					});
 					stuck = true;
 				} else if (stuck && nowTop <= offset) {
-					css = {
-						'position': 'inherit',
-						'top': 'inherit',
-						'z-index': 'inherint'
-					};
-					if (options.maintainWidth) css.width = 'inherit';
-					$this.css(css);
+					if (options.maintainWidth) $this.css({width: ''});
+					$this.removeClass('jqsb-stuck-nav');
 					$parent.css({
 						'margin-top': margin
 					});
