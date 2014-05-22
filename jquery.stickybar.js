@@ -19,8 +19,9 @@ if (typeof define === 'function' && define.amd) {
 			var stuck = false, $body = $('body'), $this = $(this), width, totalWidth, $parent, height, margin = 0, newMargin, nowTop, offset;
 			
 			//function to parse pixel values
-			var cssVal = function(property) {
-				return parseInt($this.css(property).replace(/[^\d]*/g, ''), 10) || 0;
+			var cssVal = function(property, that) {
+				that = that || $this;
+				return parseInt(that.css(property).replace(/[^\d]*/g, ''), 10) || 0;
 			};
 
 			//set default options
@@ -28,13 +29,14 @@ if (typeof define === 'function' && define.amd) {
 			if (!options.hasOwnProperty('maintainHeight')) options.maintainHeight = false;
 			if (!options.hasOwnProperty('maintainWidth')) options.maintainWidth = false;
 			if (!options.hasOwnProperty('checkFullWidth')) options.checkFullWidth = false;
+			if (!options.hasOwnProperty('maintainMargin')) options.maintainMargin = false;
 			if (!options.hasOwnProperty('navbarInline')) options.navbarInline = false;
 
 			//attach necessary styles to head
 			addStyles();
 
 			//get starting values
-			offset = $this.offset() && $this.offset().top;
+			offset = $this.offset() && $this.offset().top - cssVal('margin-top');
 			if (options.maintainWidth) {
 				//set the current width of the div, if it is full width -> set to 100%
 				totalWidth = $this.width() + cssVal('margin-left') + cssVal('border-left-width') + cssVal('padding-left') + cssVal('padding-right') + cssVal('border-right-width') + cssVal('margin-right');
@@ -56,19 +58,24 @@ if (typeof define === 'function' && define.amd) {
 					if (options.maintainWidth) $this.css({width: width});
 					$this.addClass('jqsb-stuck-nav');
 					newMargin = options.maintainHeight ? margin + height : margin;
+					newMargin += cssVal(('margin-top'), $parent);
 					if (!options.navbarInline) {
 						newMargin += offset;
 					}
-					$parent.css({
-						'margin-top': newMargin
-					});
+					if (options.maintainMargin) {
+						$parent.css({
+							'margin-top': newMargin
+						});
+					}
 					stuck = true;
 				} else if (stuck && nowTop <= offset) {
 					if (options.maintainWidth) $this.css({width: ''});
 					$this.removeClass('jqsb-stuck-nav');
-					$parent.css({
-						'margin-top': margin
-					});
+					if (options.maintainMargin) {
+						$parent.css({
+							'margin-top': margin
+						});
+					}
 					stuck = false;
 				}
 			});
