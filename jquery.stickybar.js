@@ -16,12 +16,12 @@ if (typeof define === 'function' && define.amd) {
 
 		//build plugin
 		return this.each(function() {
-			var stuck = false, $body = $('body'), $this = $(this), width, totalWidth, $parent, height, margin = 0, newMargin, nowTop, offset;
+			var stuck = false, $body = $('body'), $this = $(this), width, totalWidth, $parent, $next, $prev, height, margin, nextMargin, prevMargin, parentMargin, newMargin, nowTop, offset;
 			
 			//function to parse pixel values
 			var cssVal = function(property, that) {
 				that = that || $this;
-				return parseInt(that.css(property).replace(/[^\d]*/g, ''), 10) || 0;
+				return parseInt(that.css(property).replace(/[^\d-]*/g, ''), 10) || 0;
 			};
 
 			//set default options
@@ -39,14 +39,16 @@ if (typeof define === 'function' && define.amd) {
 			offset = $this.offset() && $this.offset().top - cssVal('margin-top');
 			if (options.maintainWidth) {
 				//set the current width of the div, if it is full width -> set to 100%
-				totalWidth = $this.width() + cssVal('margin-left') + cssVal('border-left-width') + cssVal('padding-left') + cssVal('padding-right') + cssVal('border-right-width') + cssVal('margin-right');
-				width = options.checkFullWidth && $this.parent().width() == totalWidth ? '100%' : $this.width();
+				totalWidth = $this.width() + cssVal('border-left-width') + cssVal('padding-left') + cssVal('padding-right') + cssVal('border-right-width');
+				width = options.checkFullWidth && $this.parent().width() == totalWidth ? '100%' : totalWidth;
 			}
 
 			//bind scroll event handler
 			$(window).on('scroll', function() {
-				//reset div, parent jquery objects if first time or if they no longer exists
+				//reset div, parent/next/prev jquery objects if first time or if they no longer exists
 				$parent = $parent || $this.parent();
+				$next = $next || $this.next();
+				$prev = $prev || $this.prev();
 
 				//get the current body position and settings
 				nowTop = $body.scrollTop();
@@ -54,26 +56,38 @@ if (typeof define === 'function' && define.amd) {
 
 				//adjust styling for stickybar according to position
 				if (!stuck && nowTop > offset) {
-					margin = cssVal('margin-top');
 					if (options.maintainWidth) $this.css({width: width});
 					$this.addClass('jqsb-stuck-nav');
-					newMargin = options.maintainHeight ? margin + height : margin;
-					newMargin += cssVal(('margin-top'), $parent);
-					if (!options.navbarInline) {
-						newMargin += offset;
-					}
 					if (options.maintainMargin) {
-						$parent.css({
-							'margin-top': newMargin
-						});
+						newMargin = cssVal('margin-top');
+						if (options.maintainHeight) newMargin += height;
+						if (options.navbarInline && $next.length) {
+							nextMargin = cssVal('margin-top', $next);
+							prevMargin = cssVal('margin-bottom', $prev);
+							prevMargin = prevMargin > 0 ? prevMargin : 0;
+							newMargin += nextMargin + prevMargin;
+							$next.css({
+								'margin-top': newMargin
+							});
+						} else {
+							parentMargin = cssVal('margin-top', $parent);
+							newMargin += parentMargin;
+							$parent.css({
+								'margin-top': newMargin
+							});
+						}
 					}
 					stuck = true;
 				} else if (stuck && nowTop <= offset) {
 					if (options.maintainWidth) $this.css({width: ''});
 					$this.removeClass('jqsb-stuck-nav');
-					if (options.maintainMargin) {
+					if (options.maintainMargin && options.navbarInline && $next.length) {
+						$next.css({
+							'margin-top': nextMargin
+						});
+					} else if (options.maintainMargin) {
 						$parent.css({
-							'margin-top': margin
+							'margin-top': parentMargin
 						});
 					}
 					stuck = false;
